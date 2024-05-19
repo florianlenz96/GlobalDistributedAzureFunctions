@@ -1,6 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlobalDistributedAzureFunctionsApp", "GlobalDistributedAzureFunctionsApp\GlobalDistributedAzureFunctionsApp.csproj", "{3E35FAD8-A88B-4687-97A7-8FD0A8B39BC7}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{86813A42-35E1-40A9-9D15-6EFA0F966E57}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GlobalDistributedAzureFunctionsApp", "src\GlobalDistributedAzureFunctionsApp\GlobalDistributedAzureFunctionsApp.csproj", "{CDA4E705-7B65-419F-A2A6-5BE389BB4AF8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infrastructure", "infrastructure", "{F1C56A8B-9BC5-44C3-82C6-B07E248D4636}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +12,12 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3E35FAD8-A88B-4687-97A7-8FD0A8B39BC7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3E35FAD8-A88B-4687-97A7-8FD0A8B39BC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3E35FAD8-A88B-4687-97A7-8FD0A8B39BC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3E35FAD8-A88B-4687-97A7-8FD0A8B39BC7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDA4E705-7B65-419F-A2A6-5BE389BB4AF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDA4E705-7B65-419F-A2A6-5BE389BB4AF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDA4E705-7B65-419F-A2A6-5BE389BB4AF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDA4E705-7B65-419F-A2A6-5BE389BB4AF8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CDA4E705-7B65-419F-A2A6-5BE389BB4AF8} = {86813A42-35E1-40A9-9D15-6EFA0F966E57}
 	EndGlobalSection
 EndGlobal
