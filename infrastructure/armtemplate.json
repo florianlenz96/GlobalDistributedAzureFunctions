@@ -1,0 +1,198 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "accountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Cosmos DB account"
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location for the Cosmos DB account"
+      }
+    },
+    "functionAppNames": {
+      "type": "array",
+      "metadata": {
+        "description": "Names of the Azure Function Apps"
+      }
+    },
+    "locations": {
+      "type": "array",
+      "metadata": {
+        "description": "Locations for the Azure Function Apps"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Storage Account"
+      }
+    },
+    "frontDoorName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Front Door"
+      }
+    },
+    "azureFrontDoorPrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "Prefix for the Azure Front Door"
+      }
+    }
+  },
+  "variables": {
+    "dblocations": [
+      {
+        "locationName": "[parameters('location')]",
+        "failoverPriority": 0,
+        "isZoneRedundant": false
+      },
+      {
+        "locationName": "[parameters('secondaryRegion')]",
+        "failoverPriority": 1,
+        "isZoneRedundant": false
+      }
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2021-04-15",
+      "name": "[parameters('accountName')]",
+      "location": "[parameters('location')]",
+      "kind": "GlobalDocumentDB",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "locations": "[variables('dblocations')]",
+        "ipRules": [
+          {
+            "ipAddressOrRange": "0.0.0.0"
+          }
+        ],
+        "isVirtualNetworkFilterEnabled": false,
+        "disableKeyBasedMetadataWriteAccess": false,
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2018-11-01",
+      "name": "[parameters('functionAppNames')[copyIndex()]]",
+      "location": "[parameters('locations')[copyIndex()]]",
+      "kind": "functionapp",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', concat(parameters('functionAppNames')[copyIndex()], 'Plan'))]",
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~3"
+            },
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            }
+          ],
+          "ipSecurityRestrictions": [
+            {
+              "ipAddress": "AzureFrontDoor.Backend",
+              "action": "Allow",
+              "priority": 1,
+              "name": "Allow Azure Front Door Backend"
+            },
+            {
+              "ipAddress": "Any",
+              "action": "Deny",
+              "priority": 2147483647,
+              "name": "Deny all"
+            }
+          ]
+        }
+      },
+      "copy": {
+        "name": "functionappcopy",
+        "count": "[length(parameters('functionAppNames'))]"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "name": "[substring(concat('sa', parameters('functionAppNames')[copyIndex()]), 0, 24)]",
+      "location": "[parameters('locations')[copyIndex()]]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "supportsHttpsTrafficOnly": true
+      },
+      "copy": {
+        "name": "functionappcopy",
+        "count": "[length(parameters('functionAppNames'))]"
+      }
+    },
+    {
+      "type": "Microsoft.Network/frontDoors",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('frontDoorName')]",
+      "location": "global",
+      "properties": {
+        "routingRules": [
+          {
+            "name": "LocationRouting",
+            "properties": {
+              "frontendEndpoints": [
+                {
+                  "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/frontDoors/', parameters('frontDoorName'), '/frontendEndpoints/frontendEndpoint1')]"
+                }
+              ],
+              "acceptedProtocols": ["Http", "Https"],
+              "patternsToMatch": ["/*"],
+              "routeConfiguration": {
+                "@odata.type": "#Microsoft.Azure.FrontDoor.Models.FrontdoorForwardingConfiguration",
+                "backendPool": {
+                  "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/frontDoors/', parameters('frontDoorName'), '/backendPools/backendPool1')]"
+                }
+              },
+              "enabledState": "Enabled"
+            }
+          }
+        ],
+        "backendPools": [
+          {
+            "name": "backendPool1",
+            "properties": {
+              "backends": [
+                {
+                  "address": "[concat(parameters('functionAppNames')[copyIndex()], '.azurewebsites.net')]",
+                  "httpPort": 80,
+                  "httpsPort": 443,
+                  "weight": 1,
+                  "priority": 1,
+                  "backendHostHeader": "[concat(parameters('functionAppNames')[copyIndex()], '.azurewebsites.net')]"
+                }
+              ]
+            }
+          }
+        ],
+        "frontendEndpoints": [
+          {
+            "name": "frontendEndpoint1",
+            "properties": {
+              "hostName": "[concat(parameters('azureFrontDoorPrefix'), '.azuredf.net')]",
+              "sessionAffinityEnabledState": "Disabled",
+              "sessionAffinityTtlSeconds": 0,
+              "resourceState": "Enabled"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
